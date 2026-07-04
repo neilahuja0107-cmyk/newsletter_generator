@@ -105,7 +105,7 @@ if st.session_state.generated:
             try:
 
                 response = requests.post(
-                    "http://127.0.0.1:8000/send-email",
+                    "https://newsletter-generator-43nz.onrender.com/send-email",
                     json={
                         "receiver": email,
                         "newsletter": st.session_state.newsletter+ "\n\nThanks for reading!",
