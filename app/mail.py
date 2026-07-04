@@ -1,16 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-
-import smtplib
 import os
-
-from email.mime.text import MIMEText
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
 
-EMAIL = os.getenv("EMAIL")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+BREVO_SENDER = os.getenv("BREVO_SENDER")
 
 app = FastAPI()
 
@@ -24,33 +21,41 @@ class EmailRequest(BaseModel):
 @app.post("/send-email")
 def send_email(data: EmailRequest):
 
-    msg = MIMEText(data.newsletter)
+    url = "https://api.brevo.com/v3/smtp/email"
 
-    msg["Subject"] = f"{data.topic} Newsletter"
+    headers = {
+        "accept": "application/json",
+        "api-key": BREVO_API_KEY,
+        "content-type": "application/json",
+    }
 
-    msg["From"] = EMAIL
+    payload = {
+        "sender": {
+            "name": "AI Newsletter",
+            "email": BREVO_SENDER
+        },
+        "to": [
+            {
+                "email": data.receiver
+            }
+        ],
+        "subject": f"{data.topic} Newsletter",
+        "textContent": data.newsletter
+    }
 
-    msg["To"] = data.receiver
-
-    server = smtplib.SMTP("smtp.gmail.com",587)
-
-    server.starttls()
-
-    server.login(
-        EMAIL,
-        EMAIL_PASSWORD
+    response = requests.post(
+        url,
+        headers=headers,
+        json=payload,
+        timeout=30
     )
 
-    server.sendmail(
-        EMAIL,
-        data.receiver,
-        msg.as_string()
-    )
-
-    server.quit()
+    if response.status_code not in [200, 201]:
+        raise HTTPException(
+            status_code=response.status_code,
+            detail=response.text
+        )
 
     return {
-        "message":"Newsletter sent successfully!"
+        "message": "Newsletter sent successfully!"
     }
-print(EMAIL)
-print(EMAIL_PASSWORD)
