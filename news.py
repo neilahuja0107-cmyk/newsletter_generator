@@ -1,7 +1,9 @@
 import requests
 import os
 
-NEWS_API_KEY = os.getenv("NEWS_API_KEY")
+import streamlit as st
+
+NEWS_API_KEY = st.secrets["NEWS_API_KEY"]
 
 def get_news(topic):
     url = "https://newsapi.org/v2/everything"
